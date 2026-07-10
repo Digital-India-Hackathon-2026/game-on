@@ -1,3 +1,3 @@
 # GAME ON
 
-Repository for Hackathon Team GAME ON.
+Repository for hackathon Team GAME ON.
