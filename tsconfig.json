@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": false,
+    "outDir": "./dist"
+  },
+  "include": ["ai/**/*.ts", "voice/**/*.ts", "accessibility/**/*.ts", "adhd/**/*.ts", "astigmatism/**/*.ts", "api/**/*.ts", "security/**/*.ts", "tests/**/*.ts", "lowvision/**/*.ts"]
+}

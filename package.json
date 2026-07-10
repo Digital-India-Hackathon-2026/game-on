@@ -1,0 +1,21 @@
+{
+  "name": "saralo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "dev": "npm --prefix apps/web run dev",
+    "web:build": "npm --prefix apps/web run build",
+    "web:typecheck": "npm --prefix apps/web run typecheck",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "test": "node --test tests/**/*.test.js",
+    "typecheck": "tsc --noEmit --skipLibCheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "react-router-dom": "^7.18.1"
+  }
+}

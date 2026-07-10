@@ -1,0 +1,1 @@
+export function Toast({ message }: { message: string }) { return <div role="status" className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm">{message}</div>; }
