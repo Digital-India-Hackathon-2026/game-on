@@ -186,7 +186,7 @@ export function SimulationLayer({ children }: SimulationLayerProps) {
         <div className="sim-controls no-sim-intercept">
           <div className="sim-controls__header">
             <strong>Accessibility Simulator Active</strong>
-            <button onClick={() => setSimulation(null)} title="Close simulation">
+            <button onClick={() => setSimulation(null)} title="Close simulation" type="button" aria-label="Close simulation">
               <X size={16} />
             </button>
           </div>
@@ -204,6 +204,8 @@ export function SimulationLayer({ children }: SimulationLayerProps) {
                     key={type}
                     className={colorblindType === type ? "is-active" : ""}
                     onClick={() => useSimulationStore.getState().setColorblindType(type)}
+                    type="button"
+                    aria-pressed={colorblindType === type}
                   >
                     {type}
                   </button>
@@ -216,6 +218,8 @@ export function SimulationLayer({ children }: SimulationLayerProps) {
               <button
                 className={`sim-recovery-btn ${adhdFocusRecovery ? "is-active" : ""}`}
                 onClick={() => setAdhdFocusRecovery(!adhdFocusRecovery)}
+                type="button"
+                aria-pressed={adhdFocusRecovery}
               >
                 {adhdFocusRecovery ? "Disable Focus Recovery" : "⚡ Enable Focus Recovery"}
               </button>
@@ -225,6 +229,8 @@ export function SimulationLayer({ children }: SimulationLayerProps) {
               <button
                 className={`sim-recovery-btn ${cognitiveFixed ? "is-active" : ""}`}
                 onClick={() => setCognitiveFixed(!cognitiveFixed)}
+                type="button"
+                aria-pressed={cognitiveFixed}
               >
                 {cognitiveFixed ? "Reset Overload View" : "🛠️ Fix This UI"}
               </button>
@@ -232,7 +238,7 @@ export function SimulationLayer({ children }: SimulationLayerProps) {
           </div>
 
           <div className="sim-controls__footer">
-            <button className="sim-disable-btn" onClick={resetAll}>
+            <button className="sim-disable-btn" onClick={resetAll} type="button">
               <RefreshCw size={12} /> Turn Off Simulator
             </button>
           </div>

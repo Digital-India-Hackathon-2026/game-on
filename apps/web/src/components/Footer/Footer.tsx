@@ -16,9 +16,9 @@ export function Footer() {
         </div>
 
         <div className="flex items-center gap-8 text-xs font-medium text-slate-400" aria-label="Footer navigation">
-          <a href="#" id="footer-privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-          <a href="#" id="footer-terms" className="hover:text-white transition-colors">Terms of Use</a>
-          <a href="#" id="footer-accessibility" className="hover:text-white transition-colors">Accessibility</a>
+          <a href="#security" id="footer-privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+          <a href="#pipeline" id="footer-terms" className="hover:text-white transition-colors">Terms of Use</a>
+          <a href="#modes" id="footer-accessibility" className="hover:text-white transition-colors">Accessibility</a>
         </div>
       </div>
     </footer>

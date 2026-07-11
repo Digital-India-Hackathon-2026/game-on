@@ -13,10 +13,12 @@ export function LoginPage({ auth }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setNotice(null);
 
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
@@ -41,13 +43,20 @@ export function LoginPage({ auth }: LoginPageProps) {
 
   async function handleGoogleLogin() {
     setError(null);
+    setNotice(null);
     await auth.loginWithGoogle();
   }
 
   async function handlePhoneLogin() {
     setError(null);
+    setNotice(null);
     // Bypasses check and signs in immediately as a guest
     await auth.loginAsGuest();
+  }
+
+  function showDemoHelp(message: string) {
+    setError(null);
+    setNotice(message);
   }
 
   return (
@@ -71,7 +80,7 @@ export function LoginPage({ auth }: LoginPageProps) {
 
       <nav className="fixed top-0 left-0 right-0 z-50 glass-nav">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center">
-          <a href="#" id="nav-logo-link" className="flex items-center">
+          <a href="#login" id="nav-logo-link" className="flex items-center" aria-label="Saralo login home">
             <img 
               src={logoUrl} 
               alt="Saralo Logo" 
@@ -122,13 +131,14 @@ export function LoginPage({ auth }: LoginPageProps) {
 
               <div className="mb-6">
                 <button 
-                  onClick={handlePhoneLogin} 
+                  onClick={() => void handlePhoneLogin()} 
                   id="phone-login-btn" 
                   type="button" 
+                  disabled={auth.authLoading}
                   className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:scale-[1.01] transition-all duration-300 text-sm font-semibold text-slate-200"
                 >
                   <iconify-icon icon="ph:user-bold" className="text-lg text-purple-400"></iconify-icon>
-                  Explore as Guest
+                  {auth.authLoading ? "Opening guest session..." : "Explore as Guest"}
                 </button>
               </div>
 
@@ -143,8 +153,13 @@ export function LoginPage({ auth }: LoginPageProps) {
                   {error}
                 </div>
               )}
+              {notice && (
+                <div className="mb-6 p-4 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-100 text-sm leading-snug" role="status">
+                  {notice}
+                </div>
+              )}
 
-              <form className="space-y-5" onSubmit={(e) => void handleEmailLogin(e)}>
+              <form id="login" className="space-y-5" onSubmit={(e) => void handleEmailLogin(e)}>
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
                   <div className="relative">
@@ -164,7 +179,14 @@ export function LoginPage({ auth }: LoginPageProps) {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
-                    <a href="#" id="forgot-pwd-link" className="text-xs text-pink-400 hover:underline">Forgot?</a>
+                    <button
+                      type="button"
+                      id="forgot-pwd-link"
+                      className="text-xs text-pink-400 hover:underline"
+                      onClick={() => showDemoHelp("Demo recovery: enter any email and password to create a local Saralo session.")}
+                    >
+                      Forgot?
+                    </button>
                   </div>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 flex items-center">
@@ -181,6 +203,8 @@ export function LoginPage({ auth }: LoginPageProps) {
                       type="button" 
                       onClick={() => setShowPassword(prev => !prev)}
                       id="toggle-pwd-btn" 
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-pressed={showPassword}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white flex items-center"
                     >
                       <iconify-icon icon={showPassword ? "ph:eye-bold" : "ph:eye-closed-bold"}></iconify-icon>
@@ -210,7 +234,17 @@ export function LoginPage({ auth }: LoginPageProps) {
               </form>
 
               <div className="mt-8 text-center">
-                <p className="text-sm text-slate-400">New to Saralo? <a href="#" id="signup-link" className="text-pink-400 font-semibold hover:underline">Create an account</a></p>
+                <p className="text-sm text-slate-400">
+                  New to Saralo?{" "}
+                  <button
+                    type="button"
+                    id="signup-link"
+                    className="text-pink-400 font-semibold hover:underline"
+                    onClick={() => showDemoHelp("Create an account by entering your email and any password, then pressing Sign in to Saralo.")}
+                  >
+                    Create an account
+                  </button>
+                </p>
               </div>
             </div>
           </div>
@@ -229,9 +263,9 @@ export function LoginPage({ auth }: LoginPageProps) {
           </div>
 
           <div className="flex items-center gap-8 text-xs font-medium text-slate-400">
-            <a href="#" id="footer-privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" id="footer-terms" className="hover:text-white transition-colors">Terms of Use</a>
-            <a href="#" id="footer-accessibility" className="hover:text-white transition-colors">Accessibility</a>
+            <button type="button" id="footer-privacy" className="hover:text-white transition-colors" onClick={() => showDemoHelp("Privacy: this demo stores only a local browser session and does not send login data to a production server.")}>Privacy Policy</button>
+            <button type="button" id="footer-terms" className="hover:text-white transition-colors" onClick={() => showDemoHelp("Terms: use Saralo as an accessibility demo for safe browsing assistance and patient-friendly testing.")}>Terms of Use</button>
+            <button type="button" id="footer-accessibility" className="hover:text-white transition-colors" onClick={() => showDemoHelp("Accessibility: Saralo supports keyboard navigation, visible focus, high contrast, reading guides, and mode-specific settings.")}>Accessibility</button>
           </div>
         </div>
       </footer>

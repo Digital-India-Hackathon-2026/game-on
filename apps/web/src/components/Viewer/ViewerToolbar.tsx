@@ -120,6 +120,9 @@ export function ViewerToolbar({ session, simplifyState, onToggleCognitiveReader 
                 setShowSettings(false);
               }}
               type="button"
+              aria-label="Switch accessibility mode"
+              aria-haspopup="menu"
+              aria-expanded={showModeSwitch}
               style={{ "--mode-glow": activePreset?.glow } as CSSProperties}
             >
               <span
@@ -131,7 +134,7 @@ export function ViewerToolbar({ session, simplifyState, onToggleCognitiveReader 
             </button>
 
             {showModeSwitch && (
-              <div className="viewer-toolbar__dropdown">
+              <div className="viewer-toolbar__dropdown" role="menu" aria-label="Accessibility modes">
                 {modePresets.map((mode) => (
                   <button
                     key={mode.id}
@@ -143,6 +146,8 @@ export function ViewerToolbar({ session, simplifyState, onToggleCognitiveReader 
                       setShowModeSwitch(false);
                     }}
                     type="button"
+                    role="menuitem"
+                    aria-current={mode.id === session.activeMode ? "true" : undefined}
                   >
                     <span
                       className="viewer-toolbar__mode-dot"

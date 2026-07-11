@@ -98,17 +98,17 @@ export function AccessibilityModes({ onSelectMode }: AccessibilityModesProps) {
             </div>
 
             {/* ── CTA ── */}
-            <a
-              href={`#mode-${mode.simId}`}
+            <button
+              type="button"
               className="mode-card__cta"
-              onClick={(event) => {
+              onClick={() => {
                 if (!onSelectMode) return;
-                event.preventDefault();
                 onSelectMode(mode.simId as AccessibilityModeId);
               }}
+              disabled={!onSelectMode}
             >
               Select Mode →
-            </a>
+            </button>
           </article>
         ))}
       </div>

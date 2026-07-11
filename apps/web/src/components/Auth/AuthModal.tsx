@@ -34,11 +34,19 @@ export function AuthModal({ isOpen, onClose, auth }: AuthModalProps) {
         <h2 id="auth-title">Choose how Saralo should remember you</h2>
 
         <div className="auth-modal__actions">
-          <button onClick={() => void auth.loginWithGoogle().then(onClose)} type="button">
-            Continue with Google
+          <button
+            onClick={() => void auth.loginWithGoogle().then(onClose)}
+            type="button"
+            disabled={auth.authLoading}
+          >
+            {auth.authLoading ? "Connecting..." : "Continue with Google"}
           </button>
-          <button onClick={() => void auth.loginAsGuest().then(onClose)} type="button">
-            Continue as Guest
+          <button
+            onClick={() => void auth.loginAsGuest().then(onClose)}
+            type="button"
+            disabled={auth.authLoading}
+          >
+            {auth.authLoading ? "Opening..." : "Continue as Guest"}
           </button>
         </div>
 

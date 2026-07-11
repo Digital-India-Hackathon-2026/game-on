@@ -34,7 +34,8 @@ export function usePipeline(onReady?: (url: string) => void) {
 
   const processUrl = useCallback(
     async (url: string) => {
-      const normalizedUrl = url.trim();
+      const rawUrl = url.trim();
+      const normalizedUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
       setCurrentUrl(normalizedUrl);
       setErrorMsg("");
 
