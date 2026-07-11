@@ -1938,6 +1938,9 @@ input:focus-visible,
   margin-top: 78px;
   background: #fff;
   transition: filter 0.25s ease, opacity 0.3s ease;
+  contain: layout paint style;
+  isolation: isolate;
+  z-index: 205;
 }
 
 .viewer-frame-scaler {
@@ -1945,11 +1948,12 @@ input:focus-visible,
   inset: 0;
   backface-visibility: hidden;
   transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .viewer-iframe {
   width: 100%;
-  height: 100%;
+  height: calc(100vh - 96px);
   border: 0;
   display: block;
   background: #fff;
@@ -3245,4 +3249,156 @@ input:focus-visible,
   .mode-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Overrides to prevent focus mask and reading guide from overlapping the 96px viewer toolbar */
+.reading-guide-overlay {
+  inset: 96px 0 0 !important;
+}
+.focus-mask-overlay {
+  inset: 96px 0 0 !important;
+}
+
+/* Mode effects overlay style definitions */
+.viewer-mode-effects {
+  position: fixed;
+  inset: 96px 0 0;
+  z-index: 208;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(255, 255, 255, var(--saralo-brighten, 0)), rgba(255, 255, 255, var(--saralo-brighten, 0))),
+    linear-gradient(rgba(0, 0, 0, var(--saralo-dim, 0)), rgba(0, 0, 0, var(--saralo-dim, 0)));
+}
+
+.viewer-mode-effects::before,
+.viewer-mode-effects::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.viewer-mode-effects::before {
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 255, 255, var(--saralo-sharpness, 0)) 0 22%, transparent 58%),
+    linear-gradient(rgba(255, 243, 216, var(--saralo-warmth, 0)), rgba(255, 243, 216, var(--saralo-warmth, 0))),
+    linear-gradient(rgba(6, 10, 18, var(--saralo-antiglare, 0)), rgba(6, 10, 18, var(--saralo-antiglare, 0)));
+  mix-blend-mode: soft-light;
+}
+
+.viewer-mode-effects::after {
+  border: 0 solid rgba(0, 0, 0, 0);
+  box-shadow:
+    inset 0 0 0 9999px rgba(255, 255, 255, var(--saralo-contrast-light, 0)),
+    inset 0 0 0 1px rgba(0, 0, 0, var(--saralo-contrast-edge, 0));
+  mix-blend-mode: overlay;
+}
+
+.viewer-mode-effects.is-dark-theme {
+  background:
+    linear-gradient(rgba(8, 6, 18, 0.38), rgba(8, 6, 18, 0.38)),
+    linear-gradient(rgba(255, 255, 255, var(--saralo-brighten, 0)), rgba(255, 255, 255, var(--saralo-brighten, 0))),
+    linear-gradient(rgba(0, 0, 0, var(--saralo-dim, 0)), rgba(0, 0, 0, var(--saralo-dim, 0)));
+}
+
+.viewer-magnifier-lens {
+  position: fixed;
+  left: var(--mouse-x, 50%);
+  top: var(--mouse-y, 50%);
+  z-index: 212;
+  width: 190px;
+  height: 190px;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 45%, rgba(255, 255, 255, 0.04) 62%, transparent 72%);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.32),
+    inset 0 0 0 2px rgba(160, 104, 255, 0.34);
+  backdrop-filter: contrast(1.16) brightness(1.08) saturate(1.08);
+  -webkit-backdrop-filter: contrast(1.16) brightness(1.08) saturate(1.08);
+  will-change: transform, left, top;
+}
+
+.viewer-large-cursor {
+  position: fixed;
+  left: var(--mouse-x, 50%);
+  top: var(--mouse-y, 50%);
+  z-index: 214;
+  width: calc(30px * var(--saralo-cursor-scale, 1));
+  height: calc(30px * var(--saralo-cursor-scale, 1));
+  pointer-events: none;
+  transform: translate(4px, 4px);
+  clip-path: polygon(0 0, 0 88%, 24% 66%, 39% 100%, 54% 94%, 38% 60%, 72% 60%);
+  background: #fff;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.7));
+  will-change: transform, left, top;
+}
+
+/* ADHD performance path: move one compositor layer instead of recalculating a CSS mask. */
+.focus-mask-overlay {
+  inset: 96px 0 0 !important;
+  overflow: hidden;
+  background: rgba(5, 9, 10, 0.44) !important;
+  contain: strict;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  will-change: auto !important;
+}
+
+.focus-mask-spotlight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: clamp(320px, 28vw, 480px);
+  height: clamp(320px, 28vw, 480px);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  transform: var(--focus-transform, translate3d(50vw, 50vh, 0) translate3d(-50%, -50%, 0));
+  background:
+    radial-gradient(circle at 42% 34%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.11) 28%, rgba(255, 255, 255, 0.03) 58%, rgba(255, 255, 255, 0) 74%);
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.16),
+    0 18px 76px rgba(255, 255, 255, 0.16),
+    inset 0 0 48px rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.focus-mask-spotlight::before,
+.focus-mask-spotlight::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.focus-mask-spotlight::before {
+  inset: -18px;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12), transparent 68%);
+  filter: blur(14px);
+}
+
+.focus-mask-spotlight::after {
+  inset: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.09);
+}
+
+.viewer-magnifier-lens {
+  left: 0 !important;
+  top: 0 !important;
+  transform: var(--lens-transform, translate3d(50vw, 50vh, 0) translate3d(-50%, -50%, 0)) !important;
+  will-change: transform !important;
+}
+
+.viewer-large-cursor {
+  left: 0 !important;
+  top: 0 !important;
+  transform: var(--cursor-transform, translate3d(50vw, 50vh, 0) translate3d(4px, 4px, 0)) !important;
+  will-change: transform !important;
 }

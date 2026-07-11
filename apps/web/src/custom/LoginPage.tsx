@@ -120,24 +120,15 @@ export function LoginPage({ auth }: LoginPageProps) {
                 <p className="text-slate-400 text-sm mt-1">Enter your details to access your dashboard.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <button 
-                  onClick={handleGoogleLogin} 
-                  id="google-login-btn" 
-                  type="button" 
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:scale-[1.02] transition-all duration-300 text-sm font-medium text-white"
-                >
-                  <iconify-icon icon="logos:google-icon" className="text-lg"></iconify-icon>
-                  Google
-                </button>
+              <div className="mb-6">
                 <button 
                   onClick={handlePhoneLogin} 
                   id="phone-login-btn" 
                   type="button" 
-                  className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-sm font-medium text-slate-300"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:scale-[1.01] transition-all duration-300 text-sm font-semibold text-slate-200"
                 >
-                  <iconify-icon icon="ph:phone-fill" className="text-lg text-purple-400"></iconify-icon>
-                  Phone
+                  <iconify-icon icon="ph:user-bold" className="text-lg text-purple-400"></iconify-icon>
+                  Explore as Guest
                 </button>
               </div>
 

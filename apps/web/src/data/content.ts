@@ -24,11 +24,11 @@ export const orbitNodes: OrbitNode[] = [
     asset: "https://polo-pecan-73837341.figma.site/_assets/v11/ca755f7f93c1126fb8bdbf99ab364a33aa9ab272.png",
     angle: 60, radius: 251, size: 78, delay: "0.8s", glow: "#ffd84a", shape: "round",
   },
-  {
-    label: "Voice Assistant",
-    asset: "https://polo-pecan-73837341.figma.site/_assets/v11/dc01064c7093dcc32674876ee3cf5e41c4a485c6.png",
-    angle: 180, radius: 251, size: 78, delay: "1s", glow: "#ff9cbe", shape: "round",
-  },
+  // {
+  //   label: "Voice Assistant",
+  //   asset: "https://polo-pecan-73837341.figma.site/_assets/v11/dc01064c7093dcc32674876ee3cf5e41c4a485c6.png",
+  //   angle: 180, radius: 251, size: 78, delay: "1s", glow: "#ff9cbe", shape: "round",
+  // },
   {
     label: "Security Shield",
     asset: "https://polo-pecan-73837341.figma.site/_assets/v11/d5470a58b02388336141575048720f19a50de832.png",
@@ -54,11 +54,11 @@ export const orbitNodes: OrbitNode[] = [
     asset: "https://polo-pecan-73837341.figma.site/_assets/v11/9ae171d8895199349755c43fbff00e122221a027.png",
     angle: 220, radius: 399, size: 88, delay: "2s", glow: "#ff4fb0", shape: "soft",
   },
-  {
-    label: "AI Chat Engine",
-    asset: "https://polo-pecan-73837341.figma.site/_assets/v11/926c9eb7b4bc1df846fa0e39f0b0dc3fefd80671.png",
-    angle: 320, radius: 399, size: 82, delay: "2.3s", glow: "#b576ff", shape: "round",
-  },
+  // {
+  //   label: "AI Chat Engine",
+  //   asset: "https://polo-pecan-73837341.figma.site/_assets/v11/926c9eb7b4bc1df846fa0e39f0b0dc3fefd80671.png",
+  //   angle: 320, radius: 399, size: 82, delay: "2.3s", glow: "#b576ff", shape: "round",
+  // },
 ];
 
 export function orbitNodeStyle(node: OrbitNode): CSSProperties {

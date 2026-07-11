@@ -15,6 +15,14 @@ const rateLimits = new Map<string, { windowStart: number; count: number }>();
 const adhdBookmarkRateLimits = new Map<string, { windowStart: number; count: number }>();
 const adhdBookmarks = new Map<string, Map<string, AdhdBookmark>>();
 const adhdTimerStates = new Map<string, AdhdTimerState>();
+const MEDICART_BRIDGE_KEY = 'saralo:medicart:bridge:v1';
+const medicartBridgeState: MedicartBridgeState = {
+  revision: 0,
+  updatedAt: new Date(0).toISOString(),
+  orders: [],
+  products: [],
+  tickets: [],
+};
 
 type SimplifyResponse = {
   summary: string;
@@ -38,6 +46,14 @@ type AdhdTimerState = {
   durationMinutes: number;
   remainingSeconds: number;
   updatedAt: string;
+};
+
+type MedicartBridgeState = {
+  revision: number;
+  updatedAt: string;
+  orders: unknown[];
+  products: unknown[];
+  tickets: unknown[];
 };
 
 function sendJson(res: any, statusCode: number, body: unknown) {
@@ -354,6 +370,88 @@ async function saveAdhdTimerState(sessionKey: string, timerState: AdhdTimerState
   return 'memory';
 }
 
+function sanitizeMedicartArray(value: unknown, maxItems: number) {
+  return Array.isArray(value) ? value.slice(0, maxItems) : [];
+}
+
+function getMedicartItemId(item: unknown) {
+  if (!item || typeof item !== 'object') return '';
+  const record = item as Record<string, unknown>;
+  const id = record.id ?? record.ticketId ?? record.productId ?? record.name;
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : '';
+}
+
+function mergeMedicartItems(currentItems: unknown[], incomingItems: unknown[]) {
+  const merged = new Map<string, unknown>();
+  for (const item of currentItems) {
+    const id = getMedicartItemId(item);
+    if (id) merged.set(id, item);
+  }
+  for (const item of incomingItems) {
+    const id = getMedicartItemId(item);
+    if (id) merged.set(id, item);
+  }
+  const incomingIds = new Set(incomingItems.map(getMedicartItemId).filter(Boolean));
+  const ordered = [
+    ...incomingItems.filter((item) => getMedicartItemId(item)),
+    ...currentItems.filter((item) => {
+      const id = getMedicartItemId(item);
+      return id && !incomingIds.has(id);
+    }),
+  ];
+  return ordered
+    .map((item) => merged.get(getMedicartItemId(item)))
+    .filter(Boolean)
+    .slice(0, 250);
+}
+
+async function loadMedicartBridgeState() {
+  if (hasRedisRest()) {
+    try {
+      const stored = await redisGetJson<MedicartBridgeState>(MEDICART_BRIDGE_KEY);
+      if (stored && typeof stored.revision === 'number') {
+        medicartBridgeState.revision = stored.revision;
+        medicartBridgeState.updatedAt = stored.updatedAt || medicartBridgeState.updatedAt;
+        medicartBridgeState.orders = sanitizeMedicartArray(stored.orders, 250);
+        medicartBridgeState.products = sanitizeMedicartArray(stored.products, 250);
+        medicartBridgeState.tickets = sanitizeMedicartArray(stored.tickets, 250);
+      }
+    } catch (error) {
+      logProxy('medicart_bridge_redis_fallback', { error: error instanceof Error ? error.message : 'unknown' });
+    }
+  }
+  return medicartBridgeState;
+}
+
+async function saveMedicartBridgeState() {
+  if (hasRedisRest()) {
+    try {
+      await redisSetJson(MEDICART_BRIDGE_KEY, medicartBridgeState, 60 * 60 * 24 * 30);
+      return 'redis';
+    } catch (error) {
+      logProxy('medicart_bridge_redis_fallback', { error: error instanceof Error ? error.message : 'unknown' });
+    }
+  }
+  return 'memory';
+}
+
+async function updateMedicartBridgeState(body: Record<string, unknown>) {
+  await loadMedicartBridgeState();
+  const incomingOrders = sanitizeMedicartArray(body.orders, 250);
+  const incomingProducts = sanitizeMedicartArray(body.products, 250);
+  const incomingTickets = sanitizeMedicartArray(body.tickets, 250);
+
+  medicartBridgeState.orders = mergeMedicartItems(medicartBridgeState.orders, incomingOrders);
+  medicartBridgeState.products = incomingProducts.length > 0
+    ? mergeMedicartItems(medicartBridgeState.products, incomingProducts)
+    : medicartBridgeState.products;
+  medicartBridgeState.tickets = mergeMedicartItems(medicartBridgeState.tickets, incomingTickets);
+  medicartBridgeState.revision += 1;
+  medicartBridgeState.updatedAt = new Date().toISOString();
+  const store = await saveMedicartBridgeState();
+  return { ...medicartBridgeState, store };
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -468,9 +566,9 @@ function modeEngineSnippet(visibleText: string) {
     html.saralo-mode-astigmatism body,html.saralo-mode-astigmatism p,html.saralo-mode-astigmatism li{font-size:112%!important;line-height:1.85!important}
     html.saralo-mode-low-vision{--saralo-lowvision-zoom:1.2;--saralo-lowvision-text:1.9;--saralo-lowvision-heading:1.22;--saralo-lowvision-button:1.2;--saralo-lowvision-icon:1.25;--saralo-lowvision-bg:#f6f9fc;--saralo-lowvision-surface:#ffffff;--saralo-lowvision-text-color:#08111f;--saralo-lowvision-accent:#074fb0;--saralo-lowvision-accent-soft:#e3efff;--saralo-lowvision-border:#123d73;color-scheme:light!important;cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M7 4l29 24-14 2-7 14z' fill='%2307142b' stroke='%23ffffff' stroke-width='4'/%3E%3C/svg%3E") 4 4,auto!important;scroll-behavior:smooth!important}
     html.saralo-mode-low-vision body{background:var(--saralo-lowvision-bg)!important;color:var(--saralo-lowvision-text-color)!important;filter:contrast(116%) brightness(104%)!important;font-size:calc(100%*var(--saralo-lowvision-zoom))!important;line-height:1.72!important;font-weight:600!important;text-rendering:optimizeLegibility!important;overflow-wrap:anywhere!important}
-    html.saralo-mode-low-vision *,html.saralo-mode-low-vision *::before,html.saralo-mode-low-vision *::after{box-sizing:border-box!important;max-width:100%!important;letter-spacing:0!important;scroll-margin-top:96px!important;transition:font-size 220ms ease,line-height 220ms ease,background-color 220ms ease,color 220ms ease,border-color 220ms ease,box-shadow 220ms ease,opacity 220ms ease,filter 220ms ease!important}
+    html.saralo-mode-low-vision *,html.saralo-mode-low-vision *::before,html.saralo-mode-low-vision *::after{box-sizing:border-box!important;max-width:100%!important;letter-spacing:0!important;scroll-margin-top:96px!important;transition:background-color 220ms ease,color 220ms ease!important}
     html.saralo-mode-low-vision main,html.saralo-mode-low-vision article,html.saralo-mode-low-vision [role="main"],html.saralo-mode-low-vision .content,html.saralo-mode-low-vision #content,html.saralo-mode-low-vision .mw-body,html.saralo-mode-low-vision #bodyContent{width:min(100%,1120px)!important;max-width:1120px!important;margin-left:auto!important;margin-right:auto!important;padding-left:clamp(16px,3vw,34px)!important;padding-right:clamp(16px,3vw,34px)!important}
-    html.saralo-mode-low-vision p,html.saralo-mode-low-vision li,html.saralo-mode-low-vision td,html.saralo-mode-low-vision th,html.saralo-mode-low-vision label,html.saralo-mode-low-vision summary,html.saralo-mode-low-vision blockquote{line-height:1.76!important;font-weight:650!important;color:var(--saralo-lowvision-text-color)!important;overflow-wrap:anywhere!important}
+    html.saralo-mode-low-vision p,html.saralo-mode-low-vision li,html.saralo-mode-low-vision td,html.saralo-mode-low-vision th,html.saralo-mode-low-vision label,html.saralo-mode-low-vision summary,html.saralo-mode-low-vision blockquote{font-size:calc(1rem * var(--saralo-lowvision-text, 1.9))!important;line-height:1.76!important;font-weight:650!important;color:var(--saralo-lowvision-text-color)!important;overflow-wrap:anywhere!important}
     html.saralo-mode-low-vision h1,html.saralo-mode-low-vision h2,html.saralo-mode-low-vision h3,html.saralo-mode-low-vision h4{font-size:calc(1em*var(--saralo-lowvision-heading))!important;line-height:1.22!important;font-weight:850!important;color:#03101f!important;overflow-wrap:anywhere!important}
     html.saralo-mode-low-vision p,html.saralo-mode-low-vision ul,html.saralo-mode-low-vision ol,html.saralo-mode-low-vision blockquote{margin-block:1.05em!important;max-width:76ch!important}
     html.saralo-mode-low-vision a{color:var(--saralo-lowvision-accent)!important;text-decoration:underline!important;text-decoration-thickness:max(2px,.11em)!important;text-underline-offset:.18em!important;border-radius:8px!important}
@@ -490,7 +588,7 @@ function modeEngineSnippet(visibleText: string) {
     html.saralo-mode-cognitive-overload{--saralo-cog-bg:#f7f7fb;--saralo-cog-surface:#fff;--saralo-cog-text:#101323;--saralo-cog-muted:#5b6072;--saralo-cog-accent:#5b35d5;--saralo-cog-soft:#eee9ff;color-scheme:light!important;scroll-behavior:smooth!important}
     html.saralo-mode-cognitive-overload.saralo-setting-theme-dark{--saralo-cog-bg:#090815;--saralo-cog-surface:#151226;--saralo-cog-text:#f7f3ff;--saralo-cog-muted:#c9c2da;--saralo-cog-accent:#bda8ff;--saralo-cog-soft:#211a3a;color-scheme:dark!important}
     html.saralo-mode-cognitive-overload body{background:var(--saralo-cog-bg)!important;color:var(--saralo-cog-text)!important;font:1.08rem/1.72 Inter,system-ui,-apple-system,Segoe UI,sans-serif!important;padding-bottom:86px!important}
-    html.saralo-mode-cognitive-overload *,html.saralo-mode-cognitive-overload *::before,html.saralo-mode-cognitive-overload *::after{transition:background-color 260ms ease,color 260ms ease,border-color 260ms ease,opacity 260ms ease,max-height 260ms ease,filter 260ms ease!important;scroll-margin-top:120px!important}
+    html.saralo-mode-cognitive-overload *,html.saralo-mode-cognitive-overload *::before,html.saralo-mode-cognitive-overload *::after{transition:opacity 260ms ease,filter 260ms ease!important;scroll-margin-top:120px!important}
     html.saralo-mode-cognitive-overload.saralo-setting-theme-dark body,html.saralo-mode-cognitive-overload.saralo-setting-theme-dark main,html.saralo-mode-cognitive-overload.saralo-setting-theme-dark article,html.saralo-mode-cognitive-overload.saralo-setting-theme-dark section,html.saralo-mode-cognitive-overload.saralo-setting-theme-dark div{background-color:var(--saralo-cog-bg)!important;color:var(--saralo-cog-text)!important}
     html.saralo-mode-cognitive-overload main,html.saralo-mode-cognitive-overload article,html.saralo-mode-cognitive-overload [role="main"],html.saralo-mode-cognitive-overload .content,html.saralo-mode-cognitive-overload #content{max-width:1100px!important;margin-left:auto!important;margin-right:auto!important;padding:24px!important}
     html.saralo-mode-cognitive-overload h1,html.saralo-mode-cognitive-overload h2,html.saralo-mode-cognitive-overload h3{line-height:1.22!important;color:var(--saralo-cog-text)!important;letter-spacing:0!important}
@@ -1050,9 +1148,14 @@ function modeEngineSnippet(visibleText: string) {
         window.addEventListener('popstate',refresh);
         window.addEventListener('hashchange',refresh);
       }
+      window.__SARALO_MOUSE_RELAY_ENABLED__=false;
       window.addEventListener('message',function(event){
-        if(!event.data||event.data.type!=='SARALO_APPLY_MODE')return;
-        apply(event.data);
+        if(!event.data||typeof event.data!=='object')return;
+        if(event.data.type==='SARALO_APPLY_MODE'){
+          apply(event.data);
+        }else if(event.data.type==='SARALO_ENABLE_MOUSE_RELAY'){
+          window.__SARALO_MOUSE_RELAY_ENABLED__=Boolean(event.data.enabled);
+        }
       });
       window.addEventListener('load',scheduleRuntimeRefresh);
       document.addEventListener('DOMContentLoaded',scheduleRuntimeRefresh);
@@ -1076,8 +1179,8 @@ function modeEngineSnippet(visibleText: string) {
             // parent's mousemove listener never fires here (separate
             // document/window), which is what caused the spotlight to
             // freeze/appear stuck as soon as the mouse entered the page.
-            if(window.parent&&window.parent!==window){
-              window.parent.postMessage({type:'SARALO_MOUSE_MOVE',x:e.clientX,y:e.clientY},'*');
+            if(window.parent&&window.parent!==window&&window.__SARALO_MOUSE_RELAY_ENABLED__){
+              window.parent.postMessage({type:'SARALO_MOUSE_MOVE',clientX:e.clientX,clientY:e.clientY},'*');
             }
           });
         },{passive:true});
@@ -1352,6 +1455,28 @@ export default defineConfig({
             }
           }
 
+          if (urlObj.pathname === '/api/voice-intent') {
+            // responseMimeType: 'application/json'
+            sendJson(res, 200, { ok: true, intent: 'UNKNOWN' });
+            return;
+          }
+
+          if (urlObj.pathname === '/api/medicart-bridge') {
+            if (req.method === 'GET') {
+              const state = await loadMedicartBridgeState();
+              sendJson(res, 200, { ok: true, state });
+              return;
+            }
+            if (req.method === 'POST') {
+              const body = await readJsonBody(req, 500000) as Record<string, unknown>;
+              const state = await updateMedicartBridgeState(body);
+              sendJson(res, 200, { ok: true, state });
+              return;
+            }
+            sendJson(res, 405, { ok: false, error: 'Method not allowed' });
+            return;
+          }
+
           if (urlObj.pathname === '/api/simplify') {
             const requestId = stableRequestId();
             const clientKey = String(req.headers['x-saralo-session'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'anonymous');
@@ -1398,6 +1523,136 @@ export default defineConfig({
             return;
           }
 
+          function isMedicartDemoUrl(url: string): boolean {
+            return url.includes('medicart-demo.vercel.app');
+          }
+
+          function medicartBridgeSnippet() {
+            return `
+              (function(){
+                var KEYS={
+                  orders:'medicart_orders_v2',
+                  products:'medicart_products_v2',
+                  tickets:'medicart_support_tickets_v1'
+                };
+                var bridgeUrl='/api/medicart-bridge';
+                var lastSerialized='';
+                var lastRevision=0;
+                var pushing=false;
+                var applying=false;
+                var pushTimer=null;
+                function safeParse(value,fallback){
+                  try{return value?JSON.parse(value):fallback;}catch{return fallback;}
+                }
+                function collect(){
+                  return {
+                    orders:safeParse(localStorage.getItem(KEYS.orders),[]),
+                    products:safeParse(localStorage.getItem(KEYS.products),[]),
+                    tickets:safeParse(localStorage.getItem(KEYS.tickets),[])
+                  };
+                }
+                function writeKey(key,value){
+                  var serialized=JSON.stringify(value||[]);
+                  if(localStorage.getItem(key)===serialized)return;
+                  localStorage.setItem(key,serialized);
+                  try{window.dispatchEvent(new StorageEvent('storage',{key:key,newValue:serialized,storageArea:localStorage,url:location.href}));}catch{
+                    window.dispatchEvent(new Event('storage'));
+                  }
+                }
+                function applyState(state){
+                  if(!state||typeof state!=='object')return;
+                  applying=true;
+                  try{
+                    if(Array.isArray(state.orders)&&state.orders.length>0)writeKey(KEYS.orders,state.orders);
+                    if(Array.isArray(state.products)&&state.products.length>0)writeKey(KEYS.products,state.products);
+                    if(Array.isArray(state.tickets)&&state.tickets.length>0)writeKey(KEYS.tickets,state.tickets);
+                    lastRevision=Number(state.revision)||lastRevision;
+                    lastSerialized=JSON.stringify(collect());
+                    window.dispatchEvent(new CustomEvent('saralo:medicart-sync',{detail:{state:state}}));
+                  }finally{
+                    applying=false;
+                  }
+                }
+                async function pull(){
+                  try{
+                    var response=await fetch(bridgeUrl,{cache:'no-store'});
+                    if(!response.ok)return;
+                    var data=await response.json();
+                    var state=data&&data.state;
+                    if(state&&(Number(state.revision)||0)>lastRevision)applyState(state);
+                  }catch{}
+                }
+                async function pushNow(){
+                  if(pushing||applying)return;
+                  var payload=collect();
+                  var serialized=JSON.stringify(payload);
+                  if(serialized===lastSerialized)return;
+                  pushing=true;
+                  try{
+                    var response=await fetch(bridgeUrl,{
+                      method:'POST',
+                      headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({...payload,source:'medicart-compatibility-page',url:location.href})
+                    });
+                    if(response.ok){
+                      var data=await response.json();
+                      if(data&&data.state){
+                        applyState(data.state);
+                      }
+                    }
+                  }catch{}finally{
+                    pushing=false;
+                  }
+                }
+                function schedulePush(){
+                  if(applying)return;
+                  clearTimeout(pushTimer);
+                  pushTimer=setTimeout(pushNow,180);
+                }
+                var originalSetItem=localStorage.setItem.bind(localStorage);
+                localStorage.setItem=function(key,value){
+                  originalSetItem(key,value);
+                  if(key===KEYS.orders||key===KEYS.products||key===KEYS.tickets)schedulePush();
+                };
+                var originalRemoveItem=localStorage.removeItem.bind(localStorage);
+                localStorage.removeItem=function(key){
+                  originalRemoveItem(key);
+                  if(key===KEYS.orders||key===KEYS.products||key===KEYS.tickets)schedulePush();
+                };
+                window.__SARALO_MEDICART_BRIDGE__={pull:pull,push:pushNow,collect:collect};
+                window.__SARALO_MEDICART_BRIDGE_READY__=(async function(){
+                  await pull();
+                  lastSerialized='';
+                  schedulePush();
+                  setInterval(pull,1800);
+                })();
+              })();
+            `;
+          }
+
+          function medicartCompatibilityPage() {
+            const medicartModeEngine = modeEngineSnippet('');
+            return `
+              <!DOCTYPE html>
+              <html lang="en">
+                <head>
+                  <meta charset="UTF-8" />
+                  <title>MediCart Pharmacy</title>
+                  <link rel="stylesheet" href="https://medicart-demo.vercel.app/assets/index-DjXOjoir.css" />
+                </head>
+                <body>
+                  <div id="root"></div>
+                  <script>${medicartModeEngine}<\/script>
+                  <script>${medicartBridgeSnippet()}<\/script>
+                  <script type="module">
+                    await window.__SARALO_MEDICART_BRIDGE_READY__;
+                    await import('https://medicart-demo.vercel.app/assets/index-BPBXxCYU.js');
+                  <\/script>
+                </body>
+              </html>
+            `;
+          }
+
           if (urlObj.pathname === '/api/proxy' || urlObj.pathname === '/proxy') {
             const requestId = `proxy_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
             const started = Date.now();
@@ -1406,6 +1661,32 @@ export default defineConfig({
               res.statusCode = 400;
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
               res.end(proxyFallbackPage('', 'Missing url parameter.'));
+              return;
+            }
+
+            if (isMedicartDemoUrl(targetUrl)) {
+              if (targetUrl.includes('.js')) {
+                const filePath = resolve(__dirname, '../../../medicart/client/dist/assets/index-B4G_twSl.js');
+                const jsContent = fs.readFileSync(filePath, 'utf8');
+                res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.end(jsContent);
+                return;
+              }
+
+              if (targetUrl.includes('assets/index-DjXOjoir.css')) {
+                const filePath = resolve(__dirname, '../../../medicart/client/dist/assets/index-DjXOjoir.css');
+                const cssContent = fs.readFileSync(filePath, 'utf8');
+                res.setHeader('Content-Type', 'text/css; charset=utf-8');
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.end(cssContent);
+                return;
+              }
+
+              const html = medicartCompatibilityPage();
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.end(html);
               return;
             }
 

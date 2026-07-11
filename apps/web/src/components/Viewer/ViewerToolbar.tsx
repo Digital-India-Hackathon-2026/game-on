@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -62,13 +62,37 @@ export function ViewerToolbar({ session, simplifyState, onToggleCognitiveReader 
   const [showSettings, setShowSettings] = useState(false);
   const [showModeSwitch, setShowModeSwitch] = useState(false);
   const activeMode = session.activeMode;
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
-  const resetMode = () => {
+  const resetMode = useCallback(() => {
     resetModeSettings();
-  };
+  }, [resetModeSettings]);
+
+  // Close all dropdowns on click outside
+  useEffect(() => {
+    if (!showSettings && !showModeSwitch) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        setShowSettings(false);
+        setShowModeSwitch(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowSettings(false);
+        setShowModeSwitch(false);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown, { passive: true });
+    window.addEventListener("keydown", handleKeyDown, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showSettings, showModeSwitch]);
 
   return (
-    <div className="viewer-toolbar">
+    <div className="viewer-toolbar" ref={toolbarRef}>
       <div className="viewer-toolbar__inner">
         <div className="viewer-toolbar__left">
           <button

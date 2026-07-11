@@ -9,7 +9,7 @@ import { HeroSection } from "../components/Hero/HeroSection";
 
 import { AccessibilityModes } from "../components/Sections/AccessibilityModes";
 import { AICopilot } from "../components/Sections/AICopilot";
-import { VoiceAssistant } from "../components/Sections/VoiceAssistant";
+// import { VoiceAssistant } from "../components/Sections/VoiceAssistant";
 import { SecurityShield } from "../components/Sections/SecurityShield";
 import { SystemPipeline } from "../components/Sections/SystemPipeline";
 import { DashboardSimulator } from "../components/Sections/DashboardSimulator";
@@ -115,7 +115,7 @@ export function SaraloHome() {
 
       <AccessibilityModes onSelectMode={handleModeCardSelect} />
       <AICopilot experience={experience} />
-      <VoiceAssistant experience={experience} />
+      {/* <VoiceAssistant experience={experience} /> */}
       <SecurityShield />
       <SystemPipeline />
       <DashboardSimulator pipeline={pipeline} experience={experience} />

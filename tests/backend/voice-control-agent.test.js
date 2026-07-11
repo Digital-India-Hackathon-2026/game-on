@@ -30,15 +30,33 @@ test("voice control data contracts cover multilingual execution and clarificatio
   assert.match(voiceTypes, /autoDetectLanguage/);
 });
 
-test("web voice dashboard asks permission, rate limits, confirms destructive actions, and supports undo", () => {
+test("web voice assistant uses universal safe intents and browser speech APIs", () => {
   const hook = fs.readFileSync(path.join(root, "apps", "web", "src", "voice", "useVoiceControlAgent.ts"), "utf8");
   const panel = fs.readFileSync(path.join(root, "apps", "web", "src", "components", "Viewer", "VoiceControlPanel.tsx"), "utf8");
+  const adaptiveViewer = fs.readFileSync(path.join(root, "apps", "web", "src", "components", "Viewer", "AdaptiveViewer.tsx"), "utf8");
+  const viteConfig = fs.readFileSync(path.join(root, "apps", "web", "vite.config.ts"), "utf8");
 
   assert.match(hook, /getUserMedia\(\{ audio: true \}\)/);
   assert.match(hook, /allowCommand/);
-  assert.match(hook, /requiresConfirmation/);
-  assert.match(hook, /undoLast/);
+  assert.match(hook, /handleUniversalCommand/);
+  assert.match(hook, /parseCommandWithAI/);
+  assert.match(hook, /executeAssistantIntent/);
+  assert.match(hook, /parseCommandFallback/);
+  assert.match(hook, /allowedIntents/);
+  assert.match(hook, /SARALO_BRIDGE_READY/);
+  assert.match(hook, /SARALO_ASSISTANT_COMMAND/);
+  assert.doesNotMatch(hook, /element\.click\(/);
+  assert.doesNotMatch(hook, /querySelectorAll<HTMLElement>\("button,a,input/);
   assert.match(hook, /SpeechRecognition|webkitSpeechRecognition/);
+  assert.match(hook, /speechSynthesis/);
+  for (const intent of ["OPEN_CART", "OPEN_CHECKOUT", "SEARCH_PRODUCT", "TURN_ON_LOW_VISION", "STOP_READING"]) {
+    assert.match(hook, new RegExp(intent));
+  }
   assert.match(panel, /voice-language-options/);
-  assert.match(panel, /Confirm/);
+  assert.match(panel, /Transcript/);
+  assert.match(panel, /Detected command/);
+  assert.match(panel, /Reply/);
+  assert.match(adaptiveViewer, /useVoiceControlAgent\(\{ iframeRef, session \}\)/);
+  assert.match(viteConfig, /\/api\/voice-intent/);
+  assert.match(viteConfig, /responseMimeType: 'application\/json'/);
 });
