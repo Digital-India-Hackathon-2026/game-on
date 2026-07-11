@@ -15,9 +15,13 @@ test("viewer settings persist per mode and external pages render in a direct ifr
   assert.ok(sessionHook.includes("getSettingsForMode(modeId)"), "Mode switching should restore saved settings");
   assert.ok(sessionHook.includes("removedStoredSettingKeys"), "Removed/dead settings should be filtered from stored mode settings");
   assert.ok(sessionHook.includes("resetModeSettings"), "Reset Mode should replace the active mode settings");
-  assert.ok(adaptiveViewer.includes("src={targetUrl}"), "Opened URLs should render directly in the iframe");
-  assert.ok(!adaptiveViewer.includes("/api/proxy?url=${encodeURIComponent(targetUrl)}"), "The visible renderer should not proxy external pages");
-  assert.ok(adaptiveViewer.includes("key={targetUrl}"), "Changing URLs should create a fresh iframe runtime");
+  assert.ok(adaptiveViewer.includes("src={iframeUrl}"), "Opened URLs should render through the production-safe iframe URL");
+  assert.ok(adaptiveViewer.includes("function buildIframeUrl(normalizedOriginalUrl: string) {\n  return normalizedOriginalUrl;\n}"), "The iframe URL builder should return the original website URL directly");
+  assert.ok(!adaptiveViewer.includes("existingLocalProxyUrl"), "The visible renderer should not construct a local proxy iframe URL");
+  assert.ok(!adaptiveViewer.includes("/api/proxy?url=${encodeURIComponent"), "The visible renderer should not proxy production external pages");
+  assert.ok(adaptiveViewer.includes("key={iframeUrl}"), "Changing iframe URLs should create a fresh iframe runtime");
+  assert.ok(adaptiveViewer.includes('loading="eager"'), "The active external iframe should load eagerly");
+  assert.ok(adaptiveViewer.includes('referrerPolicy="strict-origin-when-cross-origin"'), "The external iframe should use a production-safe referrer policy");
   assert.ok(adaptiveViewer.includes("needsPointerTracking"), "Mouse relay should be enabled only for modes/settings that need pointer overlays");
   assert.ok(adaptiveViewer.includes("visualScale"), "Settings sliders should drive cross-origin-safe iframe scaling");
   assert.ok(adaptiveViewer.includes("viewer-mode-effects"), "Settings should apply visible effects outside the iframe");
@@ -90,7 +94,8 @@ test("Medicart demo URL is compatible with proxy normalization and smooth viewer
 
   assert.ok(home.includes("normalizeInputUrl"), "Landing URL input should normalize bare Medicart hostnames");
   assert.ok(home.includes("`https://${trimmed}`"), "Bare domains should become HTTPS URLs");
-  assert.ok(adaptiveViewer.includes("src={targetUrl}"), "Medicart should be loaded by the visible iframe renderer");
+  assert.ok(adaptiveViewer.includes("src={iframeUrl}"), "Medicart should be loaded by the visible iframe renderer");
+  assert.ok(adaptiveViewer.includes("return normalizedOriginalUrl"), "Medicart demo should load directly through the same production-safe URL path");
   assert.ok(adaptiveViewer.includes('allow="clipboard-read; clipboard-write; fullscreen; geolocation; microphone"'), "Iframe should keep normal external-site capabilities available");
   assert.ok(viteConfig.includes("User-Agent"), "Proxy should send browser-like headers to Vercel/SPA hosts");
   assert.ok(viteConfig.includes("isMedicartDemoUrl"), "Medicart demo should have a first-class compatibility guard");

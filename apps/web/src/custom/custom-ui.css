@@ -1937,7 +1937,7 @@ input:focus-visible,
   overflow: hidden;
   margin-top: 78px;
   background: #fff;
-  transition: filter 0.25s ease, opacity 0.3s ease;
+  transition: opacity 220ms ease;
   contain: layout paint style;
   isolation: isolate;
   z-index: 205;
@@ -1948,6 +1948,12 @@ input:focus-visible,
   inset: 0;
   backface-visibility: hidden;
   transform-style: preserve-3d;
+  transition: transform 220ms ease, filter 220ms ease;
+  contain: paint;
+}
+
+.viewer-frame-scaler.is-scaled,
+.viewer-frame-scaler.is-filtered {
   will-change: transform;
 }
 
@@ -3266,6 +3272,7 @@ input:focus-visible,
   z-index: 208;
   pointer-events: none;
   overflow: hidden;
+  transition: opacity 220ms ease, background 220ms ease;
   background:
     linear-gradient(rgba(255, 255, 255, var(--saralo-brighten, 0)), rgba(255, 255, 255, var(--saralo-brighten, 0))),
     linear-gradient(rgba(0, 0, 0, var(--saralo-dim, 0)), rgba(0, 0, 0, var(--saralo-dim, 0)));
@@ -3295,11 +3302,177 @@ input:focus-visible,
   mix-blend-mode: overlay;
 }
 
+.viewer-mode-effects.is-calm-layer::before {
+  opacity: 0.95;
+}
+
+.viewer-mode-effects.has-pattern-overlay::after {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 12px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 14px);
+  mix-blend-mode: soft-light;
+}
+
+.viewer-mode-effects.has-color-labels::before {
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, calc(0.06 + var(--saralo-color-contrast-boost, 0) * 0.1));
+}
+
+.viewer-mode-effects.is-high-contrast::after {
+  box-shadow:
+    inset 0 0 0 9999px rgba(255, 255, 255, var(--saralo-contrast-light, 0.03)),
+    inset 0 0 0 2px rgba(0, 0, 0, calc(0.12 + var(--saralo-contrast-edge, 0)));
+}
+
 .viewer-mode-effects.is-dark-theme {
   background:
     linear-gradient(rgba(8, 6, 18, 0.38), rgba(8, 6, 18, 0.38)),
     linear-gradient(rgba(255, 255, 255, var(--saralo-brighten, 0)), rgba(255, 255, 255, var(--saralo-brighten, 0))),
     linear-gradient(rgba(0, 0, 0, var(--saralo-dim, 0)), rgba(0, 0, 0, var(--saralo-dim, 0)));
+}
+
+.viewer-content-simplifier,
+.viewer-chunk-guides,
+.viewer-active-paragraph-band,
+.viewer-pattern-overlay,
+.viewer-color-label-strip,
+.viewer-assist-status {
+  position: fixed;
+  z-index: 211;
+  pointer-events: none;
+}
+
+.viewer-content-simplifier {
+  inset: 96px 0 0;
+  overflow: hidden;
+}
+
+.viewer-content-simplifier::before,
+.viewer-content-simplifier::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: clamp(58px, 14vw, 260px);
+  opacity: 0;
+  background: linear-gradient(90deg, rgba(9, 8, 18, 0.34), rgba(9, 8, 18, 0));
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.viewer-content-simplifier::before {
+  left: 0;
+}
+
+.viewer-content-simplifier::after {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.viewer-content-simplifier.hide-sidebars::before,
+.viewer-content-simplifier.hide-sidebars::after,
+.viewer-content-simplifier.simplified-layout::before,
+.viewer-content-simplifier.simplified-layout::after {
+  opacity: 1;
+}
+
+.viewer-content-simplifier.hide-ads {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)) top / 100% 64px no-repeat,
+    linear-gradient(rgba(8, 10, 18, 0.08), rgba(8, 10, 18, 0.08));
+}
+
+.viewer-content-simplifier.hide-popups {
+  box-shadow: inset 0 96px 120px rgba(6, 6, 12, 0.18);
+}
+
+.viewer-chunk-guides {
+  inset: 96px 0 0;
+  background:
+    linear-gradient(90deg, transparent calc(50% - min(48vw, var(--saralo-reading-width, 850px)) / 2), rgba(255, 255, 255, 0.08) 0 calc(50% + min(48vw, var(--saralo-reading-width, 850px)) / 2), transparent 0),
+    repeating-linear-gradient(to bottom, transparent 0 calc((28px * var(--saralo-line-guide, 1.6)) - 1px), rgba(255, 216, 74, 0.14) calc((28px * var(--saralo-line-guide, 1.6)) - 1px) calc(28px * var(--saralo-line-guide, 1.6)));
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+}
+
+.viewer-chunk-guides.has-syllables {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 216, 74, 0.16) 0 calc(18px + 18px * var(--saralo-letter-guide, 0)), transparent calc(18px + 18px * var(--saralo-letter-guide, 0)) calc(34px + 44px * var(--saralo-word-guide, 0))),
+    repeating-linear-gradient(to bottom, transparent 0 44px, rgba(255, 216, 74, 0.18) 44px 46px);
+  opacity: 0.54;
+}
+
+.viewer-chunk-guides.has-simple-language {
+  box-shadow: inset 0 0 0 9999px rgba(255, 252, 240, 0.06);
+}
+
+.viewer-active-paragraph-band {
+  left: 50%;
+  top: var(--guide-top, 50%);
+  width: min(860px, calc(100vw - 48px));
+  height: 120px;
+  transform: translate3d(-50%, -50%, 0);
+  border: 2px solid rgba(160, 104, 255, 0.34);
+  border-radius: 18px;
+  background: rgba(160, 104, 255, 0.08);
+  box-shadow: 0 0 0 9999px rgba(5, 6, 12, 0.08);
+  will-change: transform;
+}
+
+.viewer-pattern-overlay {
+  inset: 96px 0 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 91, 189, 0.16) 0 7px, transparent 8px),
+    radial-gradient(circle at 72% 35%, rgba(93, 234, 255, 0.16) 0 6px, transparent 7px),
+    radial-gradient(circle at 45% 75%, rgba(255, 216, 74, 0.16) 0 5px, transparent 6px);
+  background-size: 96px 96px, 112px 112px, 88px 88px;
+  mix-blend-mode: multiply;
+  opacity: 0.72;
+}
+
+.viewer-color-label-strip {
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.viewer-color-label-strip span {
+  min-width: 48px;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #111827;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.viewer-color-label-strip span:nth-child(1) { background: #ffb3b3; }
+.viewer-color-label-strip span:nth-child(2) { background: #baf7c4; }
+.viewer-color-label-strip span:nth-child(3) { background: #b8d7ff; }
+.viewer-color-label-strip span:nth-child(4) { background: #fff2a8; }
+
+.viewer-assist-status {
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: min(620px, calc(100vw - 36px));
+  gap: 6px;
+}
+
+.viewer-assist-status span {
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #111827;
+  font-size: 0.72rem;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
 .viewer-magnifier-lens {
@@ -3318,9 +3491,7 @@ input:focus-visible,
   box-shadow:
     0 18px 48px rgba(0, 0, 0, 0.32),
     inset 0 0 0 2px rgba(160, 104, 255, 0.34);
-  backdrop-filter: contrast(1.16) brightness(1.08) saturate(1.08);
-  -webkit-backdrop-filter: contrast(1.16) brightness(1.08) saturate(1.08);
-  will-change: transform, left, top;
+  will-change: transform;
 }
 
 .viewer-large-cursor {
@@ -3335,7 +3506,7 @@ input:focus-visible,
   clip-path: polygon(0 0, 0 88%, 24% 66%, 39% 100%, 54% 94%, 38% 60%, 72% 60%);
   background: #fff;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.7));
-  will-change: transform, left, top;
+  will-change: transform;
 }
 
 /* ADHD performance path: move one compositor layer instead of recalculating a CSS mask. */
@@ -3362,8 +3533,8 @@ input:focus-visible,
     radial-gradient(circle at 42% 34%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.11) 28%, rgba(255, 255, 255, 0.03) 58%, rgba(255, 255, 255, 0) 74%);
   box-shadow:
     0 0 0 9999px rgba(0, 0, 0, 0.16),
-    0 18px 76px rgba(255, 255, 255, 0.16),
-    inset 0 0 48px rgba(255, 255, 255, 0.15);
+    0 14px 48px rgba(255, 255, 255, 0.14),
+    inset 0 0 34px rgba(255, 255, 255, 0.14);
   pointer-events: none;
   backface-visibility: hidden;
   will-change: transform;
@@ -3378,9 +3549,9 @@ input:focus-visible,
 }
 
 .focus-mask-spotlight::before {
-  inset: -18px;
+  inset: -12px;
   background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12), transparent 68%);
-  filter: blur(14px);
+  filter: blur(8px);
 }
 
 .focus-mask-spotlight::after {
@@ -3401,4 +3572,12 @@ input:focus-visible,
   top: 0 !important;
   transform: var(--cursor-transform, translate3d(50vw, 50vh, 0) translate3d(4px, 4px, 0)) !important;
   will-change: transform !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer-frame-container,
+  .viewer-frame-scaler,
+  .viewer-mode-effects {
+    transition-duration: 0.01ms !important;
+  }
 }
